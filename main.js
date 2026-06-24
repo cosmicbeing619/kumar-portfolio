@@ -5,7 +5,6 @@ let mouseX = window.innerWidth / 2;
 let mouseY = window.innerHeight / 2;
 let outlineX = mouseX;
 let outlineY = mouseY;
-let clickScatterForce = 0; // For 3D interaction
 
 window.addEventListener('mousemove', (e) => {
     mouseX = e.clientX;
@@ -13,23 +12,6 @@ window.addEventListener('mousemove', (e) => {
     
     cursorDot.style.left = `${mouseX}px`;
     cursorDot.style.top = `${mouseY}px`;
-});
-
-// Click Ripple Animation & Scatter Trigger
-window.addEventListener('mousedown', (e) => {
-    // DOM Ripple
-    const ripple = document.createElement('div');
-    ripple.classList.add('cursor-click-effect');
-    ripple.style.left = `${e.clientX}px`;
-    ripple.style.top = `${e.clientY}px`;
-    document.body.appendChild(ripple);
-    
-    setTimeout(() => {
-        ripple.remove();
-    }, 600);
-    
-    // 3D Scatter trigger
-    clickScatterForce = 150; 
 });
 
 function animateCursor() {
@@ -65,7 +47,6 @@ hoverTargets.forEach(target => {
 // --- 2. GSAP Scroll Animations (Text & Staggers) ---
 gsap.registerPlugin(ScrollTrigger);
 
-// Hero Parallax
 gsap.to(".hero-content", {
     yPercent: 50,
     ease: "none",
@@ -77,7 +58,6 @@ gsap.to(".hero-content", {
     }
 });
 
-// Staggered Title Letters (Hero)
 const titles = document.querySelectorAll('.hero-title');
 titles.forEach((title, index) => {
     const text = title.innerText;
@@ -89,14 +69,12 @@ titles.forEach((title, index) => {
         title.appendChild(span);
     });
     
-    // Stagger in with delay based on which word it is
     gsap.fromTo(title.querySelectorAll('span'), 
         { y: 100, opacity: 0 },
         { y: 0, opacity: 1, duration: 1, stagger: 0.1, ease: "power4.out", delay: 0.2 + (index * 0.4) }
     );
 });
 
-// Basic Section Reveals
 const revealUpElements = document.querySelectorAll('.reveal-up, .section-heading');
 revealUpElements.forEach(el => {
     gsap.fromTo(el, 
@@ -115,7 +93,6 @@ revealUpElements.forEach(el => {
     );
 });
 
-// Stagger Skills
 gsap.fromTo('.skill-tag',
     { y: 30, opacity: 0, scale: 0.9 },
     {
@@ -131,7 +108,6 @@ gsap.fromTo('.skill-tag',
     }
 );
 
-// Stagger Experience List Items
 document.querySelectorAll('.exp-item').forEach(item => {
     const listItems = item.querySelectorAll('li');
     if (listItems.length > 0) {
@@ -152,7 +128,6 @@ document.querySelectorAll('.exp-item').forEach(item => {
     }
 });
 
-// Stagger Project Cards
 gsap.fromTo('.project-card',
     { y: 50, opacity: 0 },
     {
@@ -168,7 +143,6 @@ gsap.fromTo('.project-card',
     }
 );
 
-// Magnetic Buttons
 const magneticEls = document.querySelectorAll('.magnetic');
 magneticEls.forEach(el => {
     el.addEventListener('mousemove', (e) => {
@@ -176,32 +150,20 @@ magneticEls.forEach(el => {
         const x = e.clientX - rect.left - rect.width / 2;
         const y = e.clientY - rect.top - rect.height / 2;
         
-        gsap.to(el, {
-            x: x * 0.4,
-            y: y * 0.4,
-            duration: 0.3,
-            ease: "power2.out"
-        });
+        gsap.to(el, { x: x * 0.4, y: y * 0.4, duration: 0.3, ease: "power2.out" });
     });
     
     el.addEventListener('mouseleave', () => {
-        gsap.to(el, {
-            x: 0,
-            y: 0,
-            duration: 0.5,
-            ease: "elastic.out(1, 0.3)"
-        });
+        gsap.to(el, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
     });
 });
 
-// --- 3. Immersive 3D Scene (Helix + Crystals + Deep Space + Comets) ---
+// --- 3. Immersive 3D Scene (Helix + Crystals + Deep Space + EXPLOSIONS) ---
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 
-// Deep space fog
 scene.fog = new THREE.FogExp2(0x050505, 0.0015);
 
-// Camera setup
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 3000);
 camera.position.z = 400;
 camera.position.y = 100;
@@ -212,7 +174,6 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
 container.appendChild(renderer.domElement);
 
-// Reusable Glow Texture
 function createGlowTexture() {
     let canvas = document.createElement('canvas');
     canvas.width = 32;
@@ -375,31 +336,77 @@ for(let i = 0; i < 40; i++) {
     crystals.push(mesh);
 }
 
-// --- 3E. Shooting Comets ---
-const cometCount = 5;
-const comets = [];
-const cometGeo = new THREE.CylinderGeometry(1, 1, 100, 4);
-cometGeo.rotateX(Math.PI / 2);
-const cometMat = new THREE.MeshBasicMaterial({
-    color: 0xffffff,
+// --- 3E. 3D EXPLOSION ON CLICK ---
+// This creates an insane explosive burst of particles originating from the mouse position
+const explosionCount = 2000;
+const expGeo = new THREE.BufferGeometry();
+const expPos = new Float32Array(explosionCount * 3);
+const expVel = [];
+
+for(let i=0; i<explosionCount; i++) {
+    expPos[i*3] = 99999; // hide initially
+    expPos[i*3+1] = 99999;
+    expPos[i*3+2] = 99999;
+    expVel.push(new THREE.Vector3(0,0,0));
+}
+expGeo.setAttribute('position', new THREE.BufferAttribute(expPos, 3));
+const expMat = new THREE.PointsMaterial({
+    color: 0x4ade80, // Electric green explosion
+    size: 6,
+    map: glowTexture,
     transparent: true,
-    opacity: 0.8,
-    blending: THREE.AdditiveBlending
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+});
+const explosionSystem = new THREE.Points(expGeo, expMat);
+scene.add(explosionSystem);
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let mouse3D = new THREE.Vector3(0, 0, 0);
+let clickScatterForce = 0;
+
+window.addEventListener('mousemove', (event) => {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 });
 
-for(let i=0; i<cometCount; i++) {
-    let comet = new THREE.Mesh(cometGeo, cometMat);
-    resetComet(comet);
-    scene.add(comet);
-    comets.push(comet);
-}
+window.addEventListener('mousedown', (e) => {
+    // 1. Create CSS Ripple Ring
+    const ripple = document.createElement('div');
+    ripple.classList.add('cursor-click-effect');
+    ripple.style.left = `${e.clientX}px`;
+    ripple.style.top = `${e.clientY}px`;
+    document.body.appendChild(ripple);
+    setTimeout(() => { ripple.remove(); }, 600);
 
-function resetComet(comet) {
-    comet.position.x = (Math.random() - 0.5) * 600;
-    comet.position.y = 800 + Math.random() * 400; // Start high up
-    comet.position.z = (Math.random() - 0.5) * 600;
-    comet.userData.speed = 10 + Math.random() * 20; // Fall down fast
-}
+    // 2. Trigger Neural Network Scatter
+    clickScatterForce = 250; 
+
+    // 3. Trigger Massive 3D Particle Explosion
+    raycaster.setFromCamera(mouse, camera);
+    raycaster.ray.at(300, mouse3D); // Explosion happens 300 units deep into the screen
+
+    for(let i=0; i<explosionCount; i++) {
+        expPos[i*3] = mouse3D.x;
+        expPos[i*3+1] = mouse3D.y;
+        expPos[i*3+2] = mouse3D.z;
+        
+        // Spherical random velocity explosion
+        let u = Math.random();
+        let v = Math.random();
+        let theta = u * 2.0 * Math.PI;
+        let phi = Math.acos(2.0 * v - 1.0);
+        let r = Math.cbrt(Math.random()) * 25; // Massive explosion speed
+        
+        expVel[i].set(
+            r * Math.sin(phi) * Math.cos(theta),
+            r * Math.sin(phi) * Math.sin(theta),
+            r * Math.cos(phi)
+        );
+    }
+    explosionSystem.geometry.attributes.position.needsUpdate = true;
+});
 
 
 // --- Interactions & Loop ---
@@ -435,49 +442,51 @@ function animateThree() {
         if(c.position.y > 800) c.position.y = -800;
         if(c.position.y < -800) c.position.y = 800;
     });
-    
-    // Animate Comets
-    comets.forEach(c => {
-        c.position.y -= c.userData.speed;
-        if(c.position.y < -800) {
-            resetComet(c);
-        }
-    });
+
+    // Animate Massive Click Explosion
+    const ePos = explosionSystem.geometry.attributes.position.array;
+    for(let i=0; i<explosionCount; i++) {
+        // Apply velocity
+        ePos[i*3] += expVel[i].x;
+        ePos[i*3+1] += expVel[i].y;
+        ePos[i*3+2] += expVel[i].z;
+        
+        // Add some drag/slowdown to explosion
+        expVel[i].multiplyScalar(0.96);
+    }
+    explosionSystem.geometry.attributes.position.needsUpdate = true;
 
     // Animate Neural Network nodes
     const nPos = netPoints.geometry.attributes.position.array;
     const linePositions = [];
     
-    // Click Scatter Effect Decay
-    if (clickScatterForce > 0) {
-        clickScatterForce *= 0.9; // decay force smoothly
-    }
+    if (clickScatterForce > 0) clickScatterForce *= 0.9; 
     
     for (let i = 0; i < netCount; i++) {
         let ix = i * 3;
         let iy = i * 3 + 1;
         let iz = i * 3 + 2;
         
-        // Base velocity
         nPos[ix] += netVelocities[i].x;
         nPos[iy] += netVelocities[i].y;
         nPos[iz] += netVelocities[i].z;
         
-        // Apply Click Scatter force outward from center
+        // Scatter Force Interaction
         if (clickScatterForce > 1) {
-            let dist = Math.sqrt(nPos[ix]*nPos[ix] + nPos[iy]*nPos[iy] + nPos[iz]*nPos[iz]);
+            let dx = nPos[ix] - mouse3D.x;
+            let dy = nPos[iy] - mouse3D.y;
+            let dz = nPos[iz] - mouse3D.z;
+            let dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
             if(dist > 0) {
-                nPos[ix] += (nPos[ix] / dist) * clickScatterForce * 0.05;
-                nPos[iy] += (nPos[iy] / dist) * clickScatterForce * 0.05;
-                nPos[iz] += (nPos[iz] / dist) * clickScatterForce * 0.05;
+                nPos[ix] += (dx / dist) * clickScatterForce * 0.1;
+                nPos[iy] += (dy / dist) * clickScatterForce * 0.1;
+                nPos[iz] += (dz / dist) * clickScatterForce * 0.1;
             }
         }
         
-        // Return slowly towards center if scattered too far
         if (Math.abs(nPos[ix]) > 200) nPos[ix] *= 0.99;
         if (Math.abs(nPos[iz]) > 200) nPos[iz] *= 0.99;
         
-        // Bounding box bounce
         if (Math.abs(nPos[ix]) > 250) netVelocities[i].x *= -1;
         if (Math.abs(nPos[iy]) > 600) netVelocities[i].y *= -1;
         if (Math.abs(nPos[iz]) > 250) netVelocities[i].z *= -1;
