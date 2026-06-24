@@ -1,128 +1,242 @@
-// --- Three.js Setup ---
+// --- 1. Custom Cursor Logic ---
+const cursorDot = document.getElementById('cursor-dot');
+const cursorOutline = document.getElementById('cursor-outline');
+let mouseX = window.innerWidth / 2;
+let mouseY = window.innerHeight / 2;
+let outlineX = mouseX;
+let outlineY = mouseY;
+
+window.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    
+    // Dot follows exactly
+    cursorDot.style.left = `${mouseX}px`;
+    cursorDot.style.top = `${mouseY}px`;
+});
+
+// Animate outline with easing
+function animateCursor() {
+    let dx = mouseX - outlineX;
+    let dy = mouseY - outlineY;
+    
+    outlineX += dx * 0.15;
+    outlineY += dy * 0.15;
+    
+    cursorOutline.style.left = `${outlineX}px`;
+    cursorOutline.style.top = `${outlineY}px`;
+    
+    requestAnimationFrame(animateCursor);
+}
+animateCursor();
+
+// Hover Effects for cursor
+const hoverTargets = document.querySelectorAll('.hover-target');
+hoverTargets.forEach(target => {
+    target.addEventListener('mouseenter', () => {
+        cursorOutline.style.width = '60px';
+        cursorOutline.style.height = '60px';
+        cursorOutline.style.backgroundColor = 'rgba(74, 222, 128, 0.1)';
+    });
+    target.addEventListener('mouseleave', () => {
+        cursorOutline.style.width = '40px';
+        cursorOutline.style.height = '40px';
+        cursorOutline.style.backgroundColor = 'transparent';
+    });
+});
+
+// --- 2. GSAP Scroll Animations ---
+gsap.registerPlugin(ScrollTrigger);
+
+// Hero Parallax
+gsap.to(".hero-content", {
+    yPercent: 50,
+    ease: "none",
+    scrollTrigger: {
+        trigger: ".hero",
+        start: "top top",
+        end: "bottom top",
+        scrub: true
+    }
+});
+
+// Reveal Up Animation
+const revealUpElements = document.querySelectorAll('.reveal-up');
+revealUpElements.forEach(el => {
+    gsap.to(el, {
+        scrollTrigger: {
+            trigger: el,
+            start: "top 85%",
+            toggleActions: "play none none reverse"
+        },
+        y: 0,
+        opacity: 1,
+        duration: 1,
+        ease: "power3.out"
+    });
+});
+
+// Magnetic Buttons
+const magneticEls = document.querySelectorAll('.magnetic');
+magneticEls.forEach(el => {
+    el.addEventListener('mousemove', (e) => {
+        const rect = el.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        
+        gsap.to(el, {
+            x: x * 0.3,
+            y: y * 0.3,
+            duration: 0.3,
+            ease: "power2.out"
+        });
+    });
+    
+    el.addEventListener('mouseleave', () => {
+        gsap.to(el, {
+            x: 0,
+            y: 0,
+            duration: 0.5,
+            ease: "elastic.out(1, 0.3)"
+        });
+    });
+});
+
+// --- 3. Advanced Three.js Neural Network ---
 const container = document.getElementById('canvas-container');
-
-// Scene, Camera, Renderer
 const scene = new THREE.Scene();
-// Add some fog for depth
-scene.fog = new THREE.FogExp2(0x0b0c10, 0.001);
-
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 30;
+camera.position.z = 200;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 container.appendChild(renderer.domElement);
 
-// --- Particle System (Data Nodes) ---
-const particleCount = 1500;
-const geometry = new THREE.BufferGeometry();
-const positions = new Float32Array(particleCount * 3);
-const colors = new Float32Array(particleCount * 3);
+// Particles setup
+const particleCount = 400; // optimized for lines
+const particles = new THREE.BufferGeometry();
+const particlePositions = new Float32Array(particleCount * 3);
+const particleVelocities = [];
 
-// Colors based on CSS variables
-const color1 = new THREE.Color(0x66fcf1); // accent-1
-const color2 = new THREE.Color(0x45a29e); // accent-2
-
-for (let i = 0; i < particleCount * 3; i += 3) {
-    // Random positions in a sphere
-    const radius = 60;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos((Math.random() * 2) - 1);
-
-    const x = radius * Math.sin(phi) * Math.cos(theta);
-    const y = radius * Math.sin(phi) * Math.sin(theta);
-    const z = radius * Math.cos(phi);
-
-    positions[i] = x;
-    positions[i + 1] = y;
-    positions[i + 2] = z;
-
-    // Mix colors
-    const mixedColor = color1.clone().lerp(color2, Math.random());
-    colors[i] = mixedColor.r;
-    colors[i + 1] = mixedColor.g;
-    colors[i + 2] = mixedColor.b;
+for (let i = 0; i < particleCount; i++) {
+    particlePositions[i * 3] = (Math.random() - 0.5) * 400;
+    particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 400;
+    particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 400;
+    
+    particleVelocities.push({
+        x: (Math.random() - 0.5) * 0.2,
+        y: (Math.random() - 0.5) * 0.2,
+        z: (Math.random() - 0.5) * 0.2
+    });
 }
 
-geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+particles.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
 
-const material = new THREE.PointsMaterial({
-    size: 0.2,
-    vertexColors: true,
+const particleMaterial = new THREE.PointsMaterial({
+    color: 0x4ade80,
+    size: 2,
     transparent: true,
-    opacity: 0.8,
-    sizeAttenuation: true
+    opacity: 0.8
 });
 
-const particles = new THREE.Points(geometry, material);
-scene.add(particles);
+const particleSystem = new THREE.Points(particles, particleMaterial);
+scene.add(particleSystem);
 
-// --- Interactive Parallax ---
-let mouseX = 0;
-let mouseY = 0;
-let targetX = 0;
-let targetY = 0;
-const windowHalfX = window.innerWidth / 2;
-const windowHalfY = window.innerHeight / 2;
-
-document.addEventListener('mousemove', (event) => {
-    mouseX = (event.clientX - windowHalfX) * 0.05;
-    mouseY = (event.clientY - windowHalfY) * 0.05;
+// Lines setup
+const lineMaterial = new THREE.LineBasicMaterial({
+    color: 0x4ade80,
+    transparent: true,
+    opacity: 0.15
 });
 
-// Smooth scroll listener for rotation effect
-let scrollY = window.scrollY;
-window.addEventListener('scroll', () => {
-    scrollY = window.scrollY;
+// We will recreate geometry for lines every frame
+let lineGeometry = new THREE.BufferGeometry();
+let linesMesh = new THREE.LineSegments(lineGeometry, lineMaterial);
+scene.add(linesMesh);
+
+// Convert mouse position to 3D space
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let mouse3D = new THREE.Vector3(0, 0, 0);
+
+window.addEventListener('mousemove', (event) => {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    raycaster.setFromCamera(mouse, camera);
+    raycaster.ray.at(200, mouse3D);
 });
 
-// --- Animation Loop ---
-const clock = new THREE.Clock();
+function animateThree() {
+    requestAnimationFrame(animateThree);
+    
+    const positions = particleSystem.geometry.attributes.position.array;
+    const linePositions = [];
+    
+    // Update particle positions and check connections
+    for (let i = 0; i < particleCount; i++) {
+        let ix = i * 3;
+        let iy = i * 3 + 1;
+        let iz = i * 3 + 2;
+        
+        // Move
+        positions[ix] += particleVelocities[i].x;
+        positions[iy] += particleVelocities[i].y;
+        positions[iz] += particleVelocities[i].z;
+        
+        // Mouse interaction (Repel)
+        let dxMouse = positions[ix] - mouse3D.x;
+        let dyMouse = positions[iy] - mouse3D.y;
+        let distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
+        
+        if (distMouse < 50) {
+            let force = (50 - distMouse) * 0.02;
+            positions[ix] += (dxMouse / distMouse) * force;
+            positions[iy] += (dyMouse / distMouse) * force;
+        }
 
-function animate() {
-    requestAnimationFrame(animate);
+        // Bounce off walls
+        if (Math.abs(positions[ix]) > 200) particleVelocities[i].x *= -1;
+        if (Math.abs(positions[iy]) > 200) particleVelocities[i].y *= -1;
+        if (Math.abs(positions[iz]) > 200) particleVelocities[i].z *= -1;
+        
+        // Check connections
+        for (let j = i + 1; j < particleCount; j++) {
+            let jx = j * 3;
+            let jy = j * 3 + 1;
+            let jz = j * 3 + 2;
+            
+            let dx = positions[ix] - positions[jx];
+            let dy = positions[iy] - positions[jy];
+            let dz = positions[iz] - positions[jz];
+            let dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            
+            if (dist < 35) {
+                linePositions.push(
+                    positions[ix], positions[iy], positions[iz],
+                    positions[jx], positions[jy], positions[jz]
+                );
+            }
+        }
+    }
     
-    const elapsedTime = clock.getElapsedTime();
-
-    // Slow rotation
-    particles.rotation.y = elapsedTime * 0.05;
-    particles.rotation.x = elapsedTime * 0.02;
-
-    // Parallax easing
-    targetX = mouseX * 0.001;
-    targetY = mouseY * 0.001;
+    particleSystem.geometry.attributes.position.needsUpdate = true;
     
-    camera.position.x += (mouseX * 0.05 - camera.position.x) * 0.05;
-    camera.position.y += (-mouseY * 0.05 - camera.position.y) * 0.05;
+    // Update lines
+    linesMesh.geometry.dispose();
+    linesMesh.geometry = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
     
-    // Add scroll effect to camera Z
-    camera.position.z = 30 - (scrollY * 0.01);
-    
-    camera.lookAt(scene.position);
+    // Slight rotation of the whole system
+    particleSystem.rotation.y += 0.001;
+    linesMesh.rotation.y += 0.001;
 
     renderer.render(scene, camera);
 }
+animateThree();
 
-animate();
-
-// --- Window Resize ---
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-// --- Simple Glitch Effect for Title ---
-const glitchText = document.querySelector('.glitch');
-setInterval(() => {
-    if(Math.random() > 0.95) {
-        glitchText.style.transform = `translate(${Math.random() * 4 - 2}px, ${Math.random() * 4 - 2}px)`;
-        glitchText.style.color = '#fff';
-        setTimeout(() => {
-            glitchText.style.transform = 'translate(0, 0)';
-            glitchText.style.color = 'var(--text-primary)';
-        }, 50);
-    }
-}, 100);
