@@ -167,7 +167,6 @@ skillTags.forEach(tag => {
         const centerY = rect.height / 2;
         const rotateX = ((y - centerY) / centerY) * -15; 
         const rotateY = ((x - centerX) / centerX) * 15;
-        
         tag.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.1, 1.1, 1.1)`;
     });
     
@@ -215,22 +214,27 @@ const colorMagenta = new THREE.Color(0xff0055);
 const colorPurple = new THREE.Color(0x8a2be2);
 const colorWhite = new THREE.Color(0xffffff);
 
-// --- 3A. Central Gaseous Helix (Increased Density) ---
-const gasCount = 20000;
+// --- 3A. Central Gaseous Helix (Fully Filled Core, Interactive Flow) ---
+const gasCount = 10000;
 const gasGeo = new THREE.BufferGeometry();
 const gasPositions = new Float32Array(gasCount * 3);
 const gasColors = new Float32Array(gasCount * 3);
+const gasOrigins = new Float32Array(gasCount * 3);
+const gasVelocities = [];
 
 for (let i = 0; i < gasCount; i++) {
     let arm = i % 3;
     let t = Math.random() * Math.PI * 50; 
-    let radius = 40 + Math.random() * 60; 
+    
+    // Fills the entire center now, no hollow tube
+    let radius = Math.random() * 100; 
     let angleOffset = (arm * Math.PI * 2) / 3;
     
     let x = radius * Math.cos(t + angleOffset);
     let y = (t - Math.PI * 25) * 15; 
     let z = radius * Math.sin(t + angleOffset);
     
+    // Organic, wavy displacement
     x += (Math.random() - 0.5) * 80;
     y += (Math.random() - 0.5) * 80;
     z += (Math.random() - 0.5) * 80;
@@ -238,6 +242,12 @@ for (let i = 0; i < gasCount; i++) {
     gasPositions[i * 3] = x;
     gasPositions[i * 3 + 1] = y;
     gasPositions[i * 3 + 2] = z;
+    
+    gasOrigins[i * 3] = x;
+    gasOrigins[i * 3 + 1] = y;
+    gasOrigins[i * 3 + 2] = z;
+    
+    gasVelocities.push({ x: 0, y: 0, z: 0 });
     
     let mixColor = arm === 0 ? colorCyan : (arm === 1 ? colorMagenta : colorPurple);
     gasColors[i * 3] = mixColor.r;
@@ -249,11 +259,11 @@ gasGeo.setAttribute('position', new THREE.BufferAttribute(gasPositions, 3));
 gasGeo.setAttribute('color', new THREE.BufferAttribute(gasColors, 3));
 
 const gasMaterial = new THREE.PointsMaterial({
-    size: 10,
+    size: 14, // Larger, softer particles for gas
     vertexColors: true,
     map: glowTexture,
     transparent: true,
-    opacity: 0.35,
+    opacity: 0.25,
     blending: THREE.AdditiveBlending,
     depthWrite: false
 });
@@ -261,21 +271,25 @@ const gasMaterial = new THREE.PointsMaterial({
 const gasHelix = new THREE.Points(gasGeo, gasMaterial);
 scene.add(gasHelix);
 
-// --- 3B. Neural Network Core (Increased Density) ---
-const netCount = 350; // Vastly more nodes for a thicker web
+// --- 3B. Neural Network Core (Tightly integrated into gas) ---
+const netCount = 300; 
 const netGeo = new THREE.BufferGeometry();
 const netPositions = new Float32Array(netCount * 3);
 const netVelocities = [];
 
 for (let i = 0; i < netCount; i++) {
-    netPositions[i * 3] = (Math.random() - 0.5) * 300;
-    netPositions[i * 3 + 1] = (Math.random() - 0.5) * 1200;
-    netPositions[i * 3 + 2] = (Math.random() - 0.5) * 300;
+    // Generated tightly inside the gas stream
+    let radius = Math.random() * 80; 
+    let theta = Math.random() * Math.PI * 2;
+    
+    netPositions[i * 3] = radius * Math.cos(theta);
+    netPositions[i * 3 + 1] = (Math.random() - 0.5) * 1500;
+    netPositions[i * 3 + 2] = radius * Math.sin(theta);
     
     netVelocities.push({
-        x: (Math.random() - 0.5) * 0.6,
-        y: (Math.random() - 0.5) * 0.6,
-        z: (Math.random() - 0.5) * 0.6
+        x: (Math.random() - 0.5) * 0.8,
+        y: (Math.random() - 0.5) * 0.8,
+        z: (Math.random() - 0.5) * 0.8
     });
 }
 netGeo.setAttribute('position', new THREE.BufferAttribute(netPositions, 3));
@@ -294,50 +308,48 @@ scene.add(netPoints);
 const lineMaterial = new THREE.LineBasicMaterial({
     color: 0x4ade80, 
     transparent: true,
-    opacity: 0.3,
+    opacity: 0.4,
     blending: THREE.AdditiveBlending
 });
 let lineMesh = new THREE.LineSegments(new THREE.BufferGeometry(), lineMaterial);
 scene.add(lineMesh);
 
-// --- 3C. Background Outer Nebula (Deep Space effect) ---
-const nebulaCount = 12000;
+// --- 3C. Background Outer Nebula ---
+const nebulaCount = 8000;
 const nebulaGeo = new THREE.BufferGeometry();
 const nebulaPos = new Float32Array(nebulaCount * 3);
 const nebulaColors = new Float32Array(nebulaCount * 3);
 
 for(let i = 0; i < nebulaCount; i++) {
     let angle = Math.random() * Math.PI * 2;
-    let radius = 500 + Math.random() * 800; 
+    let radius = 600 + Math.random() * 800; 
     
     nebulaPos[i * 3] = Math.cos(angle) * radius;
     nebulaPos[i * 3 + 1] = (Math.random() - 0.5) * 2500;
     nebulaPos[i * 3 + 2] = Math.sin(angle) * radius;
     
     let mixColor = Math.random() > 0.5 ? colorCyan : colorPurple;
-    nebulaColors[i * 3] = mixColor.r * 0.5;
-    nebulaColors[i * 3 + 1] = mixColor.g * 0.5;
-    nebulaColors[i * 3 + 2] = mixColor.b * 0.5;
+    nebulaColors[i * 3] = mixColor.r * 0.4;
+    nebulaColors[i * 3 + 1] = mixColor.g * 0.4;
+    nebulaColors[i * 3 + 2] = mixColor.b * 0.4;
 }
 nebulaGeo.setAttribute('position', new THREE.BufferAttribute(nebulaPos, 3));
 nebulaGeo.setAttribute('color', new THREE.BufferAttribute(nebulaColors, 3));
 const nebulaMat = new THREE.PointsMaterial({
     vertexColors: true,
-    size: 20,
+    size: 25,
     map: glowTexture,
     transparent: true,
-    opacity: 0.2,
+    opacity: 0.15,
     blending: THREE.AdditiveBlending,
     depthWrite: false
 });
 const nebula = new THREE.Points(nebulaGeo, nebulaMat);
 scene.add(nebula);
 
-// --- 3D. Interactable Floating Data Crystals (Massively Increased) ---
+// --- 3D. Interactable Floating Data Crystals ---
 const crystals = [];
-// Create a ton of crystals everywhere, not just sides
-for(let i = 0; i < 150; i++) {
-    // Random shapes
+for(let i = 0; i < 120; i++) {
     let geoType = Math.random();
     let geo;
     if(geoType > 0.6) geo = new THREE.IcosahedronGeometry(15 + Math.random()*20, 0);
@@ -350,9 +362,8 @@ for(let i = 0; i < 150; i++) {
     
     let mesh = new THREE.Mesh(geo, mat);
     
-    // Spread them widely
     let side = Math.random() > 0.5 ? 1 : -1;
-    mesh.position.x = side * (100 + Math.random() * 400);
+    mesh.position.x = side * (150 + Math.random() * 400);
     mesh.position.y = (Math.random() - 0.5) * 2000;
     mesh.position.z = (Math.random() - 0.5) * 600;
     
@@ -361,7 +372,6 @@ for(let i = 0; i < 150; i++) {
         ry: (Math.random() - 0.5) * 0.04,
         rz: (Math.random() - 0.5) * 0.04,
         floatSpeed: (Math.random() - 0.5) * 1.5,
-        baseScale: 1,
         targetScale: 1,
         isHit: false,
         originalColor: matColor
@@ -385,7 +395,7 @@ for(let i=0; i<explosionCount; i++) {
 }
 expGeo.setAttribute('position', new THREE.BufferAttribute(expPos, 3));
 const expMat = new THREE.PointsMaterial({
-    color: 0xffffff, // White hot explosion
+    color: 0xffffff, 
     size: 8,
     map: glowTexture,
     transparent: true,
@@ -407,7 +417,6 @@ window.addEventListener('mousemove', (event) => {
 });
 
 window.addEventListener('mousedown', (e) => {
-    // DOM Ripple
     const ripple = document.createElement('div');
     ripple.classList.add('cursor-click-effect');
     ripple.style.left = `${e.clientX}px`;
@@ -415,28 +424,22 @@ window.addEventListener('mousedown', (e) => {
     document.body.appendChild(ripple);
     setTimeout(() => { ripple.remove(); }, 600);
 
-    // Update Raycaster
     raycaster.setFromCamera(mouse, camera);
 
-    // Check if we clicked on a Crystal
     const intersects = raycaster.intersectObjects(crystals);
     if (intersects.length > 0) {
         let hitCrystal = intersects[0].object;
         hitCrystal.userData.isHit = true;
-        hitCrystal.userData.targetScale = 3.0; // Blow up massively
-        hitCrystal.material.color.setHex(0xffffff); // Turn pure white
-        
-        // Spin uncontrollably
+        hitCrystal.userData.targetScale = 3.0; 
+        hitCrystal.material.color.setHex(0xffffff); 
         hitCrystal.userData.rx = (Math.random() - 0.5) * 0.5;
         hitCrystal.userData.ry = (Math.random() - 0.5) * 0.5;
         
-        // Trigger scatter locally around the crystal
         mouse3D.copy(hitCrystal.position);
-        clickScatterForce = 400; 
+        clickScatterForce = 500; 
     } else {
-        // No crystal hit, trigger deep space explosion
         raycaster.ray.at(400, mouse3D); 
-        clickScatterForce = 300; 
+        clickScatterForce = 400; 
         
         for(let i=0; i<explosionCount; i++) {
             expPos[i*3] = mouse3D.x;
@@ -478,11 +481,52 @@ function animateThree() {
     requestAnimationFrame(animateThree);
     const time = clock.getElapsedTime();
     
-    // Rotate background
-    gasHelix.rotation.y = time * 0.05;
+    gasHelix.rotation.y = time * 0.02; // Slower overall rotation because internal physics takes over
     nebula.rotation.y = time * 0.01; 
     
-    // Animate Interactable Crystals
+    // 1. Interactive Wavy Flowing Gas Physics
+    const gPos = gasHelix.geometry.attributes.position.array;
+    for (let i = 0; i < gasCount; i++) {
+        let ix = i * 3;
+        let iy = i * 3 + 1;
+        let iz = i * 3 + 2;
+        
+        // Add wavy drifting noise
+        gasVelocities[i].x += Math.sin(time + gasOrigins[iy]*0.01) * 0.05;
+        gasVelocities[i].y += Math.cos(time + gasOrigins[ix]*0.01) * 0.05;
+        gasVelocities[i].z += Math.sin(time + gasOrigins[iz]*0.01) * 0.05;
+        
+        // Apply click explosion force
+        if (clickScatterForce > 1) {
+            let dx = gPos[ix] - mouse3D.x;
+            let dy = gPos[iy] - mouse3D.y;
+            let dz = gPos[iz] - mouse3D.z;
+            let dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+            if(dist > 0 && dist < 1200) { 
+                gasVelocities[i].x += (dx / dist) * clickScatterForce * 0.1 * Math.random();
+                gasVelocities[i].y += (dy / dist) * clickScatterForce * 0.1 * Math.random();
+                gasVelocities[i].z += (dz / dist) * clickScatterForce * 0.1 * Math.random();
+            }
+        }
+        
+        // Update positions
+        gPos[ix] += gasVelocities[i].x;
+        gPos[iy] += gasVelocities[i].y;
+        gPos[iz] += gasVelocities[i].z;
+        
+        // Elastic pull back to original organic shape
+        gPos[ix] += (gasOrigins[ix] - gPos[ix]) * 0.02;
+        gPos[iy] += (gasOrigins[iy] - gPos[iy]) * 0.02;
+        gPos[iz] += (gasOrigins[iz] - gPos[iz]) * 0.02;
+        
+        // Friction
+        gasVelocities[i].x *= 0.92;
+        gasVelocities[i].y *= 0.92;
+        gasVelocities[i].z *= 0.92;
+    }
+    gasHelix.geometry.attributes.position.needsUpdate = true;
+
+    // 2. Animate Crystals
     crystals.forEach(c => {
         c.rotation.x += c.userData.rx;
         c.rotation.y += c.userData.ry;
@@ -492,18 +536,14 @@ function animateThree() {
         if(c.position.y > 1000) c.position.y = -1000;
         if(c.position.y < -1000) c.position.y = 1000;
 
-        // Crystal Hit physics (scaling up and down)
         if (c.userData.isHit) {
             c.scale.lerp(new THREE.Vector3(c.userData.targetScale, c.userData.targetScale, c.userData.targetScale), 0.1);
-            if(c.scale.x > 2.8) {
-                c.userData.targetScale = 0.0; // Shrink to nothing
-            }
+            if(c.scale.x > 2.8) c.userData.targetScale = 0.0; 
             if(c.scale.x < 0.1) {
-                // Respawn
                 c.userData.isHit = false;
                 c.userData.targetScale = 1.0;
                 c.scale.set(1,1,1);
-                c.position.y = 1000; // Drop from top
+                c.position.y = 1000; 
                 c.material.color.setHex(c.userData.originalColor);
                 c.userData.rx = (Math.random() - 0.5) * 0.04;
                 c.userData.ry = (Math.random() - 0.5) * 0.04;
@@ -511,21 +551,21 @@ function animateThree() {
         }
     });
 
-    // Animate Click Explosion
+    // 3. Animate Supernova Explosion
     const ePos = explosionSystem.geometry.attributes.position.array;
     for(let i=0; i<explosionCount; i++) {
         ePos[i*3] += expVel[i].x;
         ePos[i*3+1] += expVel[i].y;
         ePos[i*3+2] += expVel[i].z;
-        expVel[i].multiplyScalar(0.96); // drag
+        expVel[i].multiplyScalar(0.96); 
     }
     explosionSystem.geometry.attributes.position.needsUpdate = true;
 
-    // Animate Dense Neural Network nodes
+    // 4. Animate Neural Network nodes
     const nPos = netPoints.geometry.attributes.position.array;
     const linePositions = [];
     
-    if (clickScatterForce > 0) clickScatterForce *= 0.9; 
+    if (clickScatterForce > 0) clickScatterForce *= 0.92; 
     
     for (let i = 0; i < netCount; i++) {
         let ix = i * 3;
@@ -536,29 +576,26 @@ function animateThree() {
         nPos[iy] += netVelocities[i].y;
         nPos[iz] += netVelocities[i].z;
         
-        // Scatter Force
         if (clickScatterForce > 1) {
             let dx = nPos[ix] - mouse3D.x;
             let dy = nPos[iy] - mouse3D.y;
             let dz = nPos[iz] - mouse3D.z;
             let dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-            if(dist > 0 && dist < 500) {
-                nPos[ix] += (dx / dist) * clickScatterForce * 0.1;
-                nPos[iy] += (dy / dist) * clickScatterForce * 0.1;
-                nPos[iz] += (dz / dist) * clickScatterForce * 0.1;
+            if(dist > 0 && dist < 600) {
+                nPos[ix] += (dx / dist) * clickScatterForce * 0.15;
+                nPos[iy] += (dy / dist) * clickScatterForce * 0.15;
+                nPos[iz] += (dz / dist) * clickScatterForce * 0.15;
             }
         }
         
-        // Box bounds
-        if (Math.abs(nPos[ix]) > 300) netVelocities[i].x *= -1;
+        // Bounds for nodes
+        if (Math.abs(nPos[ix]) > 250) netVelocities[i].x *= -1;
         if (Math.abs(nPos[iy]) > 800) netVelocities[i].y *= -1;
-        if (Math.abs(nPos[iz]) > 300) netVelocities[i].z *= -1;
+        if (Math.abs(nPos[iz]) > 250) netVelocities[i].z *= -1;
         
-        // Return gravity
-        if (Math.abs(nPos[ix]) > 250) nPos[ix] *= 0.99;
-        if (Math.abs(nPos[iz]) > 250) nPos[iz] *= 0.99;
+        if (Math.abs(nPos[ix]) > 200) nPos[ix] *= 0.98;
+        if (Math.abs(nPos[iz]) > 200) nPos[iz] *= 0.98;
         
-        // Neural Lines
         for (let j = i + 1; j < netCount; j++) {
             let jx = j * 3;
             let jy = j * 3 + 1;
@@ -569,11 +606,8 @@ function animateThree() {
             let dz = nPos[iz] - nPos[jz];
             let distSq = dx*dx + dy*dy + dz*dz;
             
-            if (distSq < 7000) {
-                linePositions.push(
-                    nPos[ix], nPos[iy], nPos[iz],
-                    nPos[jx], nPos[jy], nPos[jz]
-                );
+            if (distSq < 8000) {
+                linePositions.push(nPos[ix], nPos[iy], nPos[iz], nPos[jx], nPos[jy], nPos[jz]);
             }
         }
     }
@@ -582,12 +616,10 @@ function animateThree() {
     lineMesh.geometry.dispose();
     lineMesh.geometry = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
     
-    // Parallax & Scroll camera movement
+    // Parallax
     camera.position.x += (targetMouseX * 150 - camera.position.x) * 0.05;
-    
     let targetCamY = 150 - scrollY * 0.25; 
     camera.position.y += (targetCamY - camera.position.y) * 0.05;
-    
     camera.lookAt(0, targetCamY - 150, 0);
 
     renderer.render(scene, camera);
