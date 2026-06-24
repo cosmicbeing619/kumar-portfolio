@@ -40,7 +40,7 @@ hoverTargets.forEach(target => {
         cursorOutline.style.width = '40px';
         cursorOutline.style.height = '40px';
         cursorOutline.style.backgroundColor = 'transparent';
-        cursorOutline.style.borderColor = 'var(--accent)'; // Will need CSS update if they want global accent changed, but let's leave it
+        cursorOutline.style.borderColor = 'var(--accent)'; 
     });
 });
 
@@ -182,7 +182,7 @@ const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x050505, 0.0012);
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 4000);
-camera.position.z = 400;
+camera.position.z = 450;
 camera.position.y = 100;
 camera.lookAt(0, 0, 0);
 
@@ -190,6 +190,23 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
 container.appendChild(renderer.domElement);
+
+// --- LIGHTING (Required for realistic liquid material) ---
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+scene.add(ambientLight);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+dirLight.position.set(0, 500, 500);
+scene.add(dirLight);
+
+const pointLight1 = new THREE.PointLight(0xffaa00, 2, 1000);
+pointLight1.position.set(200, 200, 200);
+scene.add(pointLight1);
+
+const pointLight2 = new THREE.PointLight(0xff0000, 2, 1000);
+pointLight2.position.set(-200, -200, 200);
+scene.add(pointLight2);
+
 
 function createGlowTexture() {
     let canvas = document.createElement('canvas');
@@ -209,60 +226,42 @@ function createGlowTexture() {
 }
 const glowTexture = createGlowTexture();
 
-// NEW FIERY THEME COLORS
 const colorRed = new THREE.Color(0xff1100);
 const colorOrange = new THREE.Color(0xff6600);
-const colorYellow = new THREE.Color(0xffcc00);
 
-// --- 3A. Falling Fluid Gas Column ---
-const gasCount = 15000;
-const gasGeo = new THREE.BufferGeometry();
-const gasPositions = new Float32Array(gasCount * 3);
-const gasColors = new Float32Array(gasCount * 3);
-const gasVelocities = [];
+// --- 3A. Central Molten Liquid Column (Continuous Mesh, Not Particles) ---
+const liquidGeo = new THREE.CylinderGeometry(120, 120, 3000, 64, 128);
+const liquidPos = liquidGeo.attributes.position;
+const vCount = liquidPos.count;
 
-for (let i = 0; i < gasCount; i++) {
-    // Generate in a massive, wide cylinder
-    let radius = Math.random() * 250; 
-    let theta = Math.random() * Math.PI * 2;
-    
-    let x = radius * Math.cos(theta);
-    let y = (Math.random() - 0.5) * 2500; // Tall column spanning top to bottom
-    let z = radius * Math.sin(theta);
-    
-    gasPositions[i * 3] = x;
-    gasPositions[i * 3 + 1] = y;
-    gasPositions[i * 3 + 2] = z;
-    
-    gasVelocities.push({ x: 0, y: 0, z: 0 });
-    
-    // Mix Red, Orange, Yellow
-    let rnd = Math.random();
-    let mixColor;
-    if (rnd < 0.4) mixColor = colorRed;
-    else if (rnd < 0.8) mixColor = colorOrange;
-    else mixColor = colorYellow;
-    
-    gasColors[i * 3] = mixColor.r;
-    gasColors[i * 3 + 1] = mixColor.g;
-    gasColors[i * 3 + 2] = mixColor.b;
+// Store original coordinates
+const oX = new Float32Array(vCount);
+const oY = new Float32Array(vCount);
+const oZ = new Float32Array(vCount);
+const liquidColors = new Float32Array(vCount * 3);
+
+for(let i=0; i<vCount; i++) {
+    oX[i] = liquidPos.array[i*3];
+    oY[i] = liquidPos.array[i*3+1];
+    oZ[i] = liquidPos.array[i*3+2];
 }
 
-gasGeo.setAttribute('position', new THREE.BufferAttribute(gasPositions, 3));
-gasGeo.setAttribute('color', new THREE.BufferAttribute(gasColors, 3));
+liquidGeo.setAttribute('color', new THREE.BufferAttribute(liquidColors, 3));
 
-const gasMaterial = new THREE.PointsMaterial({
-    size: 18, // Large fluid particles
+// Physical, shiny liquid material
+const liquidMat = new THREE.MeshPhysicalMaterial({
     vertexColors: true,
-    map: glowTexture,
     transparent: true,
-    opacity: 0.2, // Very soft
-    blending: THREE.AdditiveBlending,
-    depthWrite: false
+    opacity: 0.85,
+    roughness: 0.1,  // Very shiny/wet
+    metalness: 0.3,  
+    clearcoat: 1.0,  // Wet gloss effect
+    clearcoatRoughness: 0.1,
+    side: THREE.DoubleSide
 });
 
-const gasFluid = new THREE.Points(gasGeo, gasMaterial);
-scene.add(gasFluid);
+const liquidPillar = new THREE.Mesh(liquidGeo, liquidMat);
+scene.add(liquidPillar);
 
 // --- 3B. Background Outer Nebula (Warm Space effect) ---
 const nebulaCount = 8000;
@@ -279,7 +278,7 @@ for(let i = 0; i < nebulaCount; i++) {
     nebulaPos[i * 3 + 2] = Math.sin(angle) * radius;
     
     let mixColor = Math.random() > 0.5 ? colorRed : colorOrange;
-    nebulaColors[i * 3] = mixColor.r * 0.3; // dark background stars
+    nebulaColors[i * 3] = mixColor.r * 0.3; 
     nebulaColors[i * 3 + 1] = mixColor.g * 0.3;
     nebulaColors[i * 3 + 2] = mixColor.b * 0.3;
 }
@@ -331,35 +330,14 @@ for(let i = 0; i < 120; i++) {
     crystals.push(mesh);
 }
 
-// --- 3D. 3D EXPLOSION ON CLICK (White Hot) ---
-const explosionCount = 3000;
-const expGeo = new THREE.BufferGeometry();
-const expPos = new Float32Array(explosionCount * 3);
-const expVel = [];
-
-for(let i=0; i<explosionCount; i++) {
-    expPos[i*3] = 99999; 
-    expPos[i*3+1] = 99999;
-    expPos[i*3+2] = 99999;
-    expVel.push(new THREE.Vector3(0,0,0));
-}
-expGeo.setAttribute('position', new THREE.BufferAttribute(expPos, 3));
-const expMat = new THREE.PointsMaterial({
-    color: 0xffffff, 
-    size: 10,
-    map: glowTexture,
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false
-});
-const explosionSystem = new THREE.Points(expGeo, expMat);
-scene.add(explosionSystem);
 
 // --- Event Listeners & Interaction ---
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let mouse3D = new THREE.Vector3(0, 0, 0);
-let clickScatterForce = 0;
+
+// Liquid Ripple array for clicks
+let liquidRipples = [];
 
 window.addEventListener('mousemove', (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -369,7 +347,6 @@ window.addEventListener('mousemove', (event) => {
 window.addEventListener('mousedown', (e) => {
     const ripple = document.createElement('div');
     ripple.classList.add('cursor-click-effect');
-    // make click ripple warm colored
     ripple.style.borderColor = '#ff8800'; 
     ripple.style.left = `${e.clientX}px`;
     ripple.style.top = `${e.clientY}px`;
@@ -378,6 +355,7 @@ window.addEventListener('mousedown', (e) => {
 
     raycaster.setFromCamera(mouse, camera);
 
+    // 1. Check Crystals
     const intersects = raycaster.intersectObjects(crystals);
     if (intersects.length > 0) {
         let hitCrystal = intersects[0].object;
@@ -386,31 +364,26 @@ window.addEventListener('mousedown', (e) => {
         hitCrystal.material.color.setHex(0xffffff); 
         hitCrystal.userData.rx = (Math.random() - 0.5) * 0.5;
         hitCrystal.userData.ry = (Math.random() - 0.5) * 0.5;
-        
-        mouse3D.copy(hitCrystal.position);
-        clickScatterForce = 500; 
+    } 
+    
+    // 2. Check Liquid Mesh for Fluid interaction (dent/ripple)
+    const liquidHit = raycaster.intersectObject(liquidPillar);
+    if(liquidHit.length > 0) {
+        liquidRipples.push({
+            x: liquidHit[0].point.x,
+            y: liquidHit[0].point.y,
+            z: liquidHit[0].point.z,
+            force: 180 // Deep dent force
+        });
     } else {
-        raycaster.ray.at(400, mouse3D); 
-        clickScatterForce = 600; 
-        
-        for(let i=0; i<explosionCount; i++) {
-            expPos[i*3] = mouse3D.x;
-            expPos[i*3+1] = mouse3D.y;
-            expPos[i*3+2] = mouse3D.z;
-            
-            let u = Math.random();
-            let v = Math.random();
-            let theta = u * 2.0 * Math.PI;
-            let phi = Math.acos(2.0 * v - 1.0);
-            let r = Math.cbrt(Math.random()) * 35; // Fast white explosion
-            
-            expVel[i].set(
-                r * Math.sin(phi) * Math.cos(theta),
-                r * Math.sin(phi) * Math.sin(theta),
-                r * Math.cos(phi)
-            );
-        }
-        explosionSystem.geometry.attributes.position.needsUpdate = true;
+        // If they click empty space, just push the liquid centrally relative to camera depth
+        raycaster.ray.at(400, mouse3D);
+        liquidRipples.push({
+            x: mouse3D.x,
+            y: mouse3D.y,
+            z: mouse3D.z,
+            force: 250 // Massive displacement
+        });
     }
 });
 
@@ -433,64 +406,66 @@ function animateThree() {
     requestAnimationFrame(animateThree);
     const time = clock.getElapsedTime();
     
-    // Slow planetary rotation
-    gasFluid.rotation.y = time * 0.01; 
+    liquidPillar.rotation.y = time * 0.05; 
     nebula.rotation.y = time * 0.01; 
     
-    // 1. Fluid Wavy Falling Gas Physics
-    const gPos = gasFluid.geometry.attributes.position.array;
-    for (let i = 0; i < gasCount; i++) {
-        let ix = i * 3;
-        let iy = i * 3 + 1;
-        let iz = i * 3 + 2;
+    // Update active ripples
+    for(let r=0; r<liquidRipples.length; r++) {
+        liquidRipples[r].force *= 0.94; // Decay force
+    }
+    liquidRipples = liquidRipples.filter(r => r.force > 1); // Clean up dead ripples
+    
+    // 1. Fluid Wavy Mesh Simulation
+    for (let i = 0; i < vCount; i++) {
+        let ox = oX[i];
+        let oy = oY[i];
+        let oz = oZ[i];
         
-        // Gravity (Falling Downwards)
-        gasVelocities[i].y -= 0.08;
+        let angle = Math.atan2(oz, ox);
         
-        // Wavy organic fluid flow based on Height and Time
-        let waveX = Math.sin(gPos[iy] * 0.005 + time * 1.5) * 0.3;
-        let waveZ = Math.cos(gPos[iy] * 0.004 + time * 1.2) * 0.3;
-        gasVelocities[i].x += waveX;
-        gasVelocities[i].z += waveZ;
+        // Complex falling sine waves for fluid look
+        let wave1 = Math.sin(angle * 3 + oy * 0.015 + time * 3) * 12;
+        let wave2 = Math.sin(angle * 5 - oy * 0.008 + time * 2) * 8;
+        let wave3 = Math.cos(oy * 0.005 - time * 4) * 15;
         
-        // Apply explosive click dispersion
-        if (clickScatterForce > 1) {
-            let dx = gPos[ix] - mouse3D.x;
-            let dy = gPos[iy] - mouse3D.y;
-            let dz = gPos[iz] - mouse3D.z;
-            let dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-            if(dist > 0 && dist < 1500) { 
-                gasVelocities[i].x += (dx / dist) * clickScatterForce * 0.15 * Math.random();
-                gasVelocities[i].y += (dy / dist) * clickScatterForce * 0.15 * Math.random();
-                gasVelocities[i].z += (dz / dist) * clickScatterForce * 0.15 * Math.random();
+        let totalWave = wave1 + wave2 + wave3;
+        
+        // Apply click dents
+        let dent = 0;
+        for(let r=0; r<liquidRipples.length; r++) {
+            let dx = ox - liquidRipples[r].x;
+            let dy = oy - liquidRipples[r].y;
+            let dz = oz - liquidRipples[r].z;
+            let distSq = dx*dx + dy*dy + dz*dz;
+            
+            // If within radius of click, push vertices inward
+            if (distSq < 90000) { // 300 radius squared
+                let dist = Math.sqrt(distSq);
+                dent -= (300 - dist) * (liquidRipples[r].force / 300);
             }
         }
         
-        // Update positions
-        gPos[ix] += gasVelocities[i].x;
-        gPos[iy] += gasVelocities[i].y;
-        gPos[iz] += gasVelocities[i].z;
+        // Apply scale to radius
+        let origRadius = Math.sqrt(ox*ox + oz*oz);
+        if(origRadius === 0) origRadius = 1;
+        let newRadius = origRadius + totalWave + dent;
+        let scale = newRadius / origRadius;
         
-        // Return to center column softly so it doesn't drift apart entirely
-        gPos[ix] *= 0.995;
-        gPos[iz] *= 0.995;
+        liquidPos.array[i*3] = ox * scale;
+        liquidPos.array[i*3+2] = oz * scale;
         
-        // Friction / Air Resistance
-        gasVelocities[i].x *= 0.92;
-        gasVelocities[i].y *= 0.98; // Fall fast
-        gasVelocities[i].z *= 0.92;
-        
-        // Infinite Loop: Reset to top when it falls too low
-        if (gPos[iy] < -1200) {
-            gPos[iy] = 1200 + Math.random() * 200; // spawn at top
-            gasVelocities[i].y = 0; // reset vertical speed
-            let radius = Math.random() * 250; 
-            let theta = Math.random() * Math.PI * 2;
-            gPos[ix] = radius * Math.cos(theta);
-            gPos[iz] = radius * Math.sin(theta);
-        }
+        // Fluid Coloring (Peaks are Yellow, Valleys are Red/Dark)
+        let heightMix = (totalWave + 35) / 70; // Map wave height to 0-1
+        liquidColors[i*3] = 1.0; 
+        liquidColors[i*3+1] = heightMix; // Green channel dictates yellow vs red
+        liquidColors[i*3+2] = 0.0; 
     }
-    gasFluid.geometry.attributes.position.needsUpdate = true;
+    
+    liquidPos.needsUpdate = true;
+    liquidGeo.attributes.color.needsUpdate = true;
+    
+    // MUST recalculate normals so the light reflects correctly off the wavy surface!
+    liquidGeo.computeVertexNormals();
 
     // 2. Animate Crystals
     crystals.forEach(c => {
@@ -516,19 +491,6 @@ function animateThree() {
             }
         }
     });
-
-    // 3. Animate Supernova Explosion
-    const ePos = explosionSystem.geometry.attributes.position.array;
-    for(let i=0; i<explosionCount; i++) {
-        ePos[i*3] += expVel[i].x;
-        ePos[i*3+1] += expVel[i].y;
-        ePos[i*3+2] += expVel[i].z;
-        expVel[i].multiplyScalar(0.96); 
-    }
-    explosionSystem.geometry.attributes.position.needsUpdate = true;
-    
-    // Decay Explosion Force
-    if (clickScatterForce > 0) clickScatterForce *= 0.92; 
 
     // Parallax
     camera.position.x += (targetMouseX * 150 - camera.position.x) * 0.05;
