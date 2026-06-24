@@ -17,7 +17,7 @@
 
 /* Hide default cursor and set transparent bg so canvas shows through */
 body, html {
-    background-color: transparent; /* Changed from var(--bg) so canvas is visible */
+    background-color: transparent; 
     color: var(--text-main);
     font-family: var(--font-body);
     cursor: none !important;
@@ -56,6 +56,21 @@ a, button, .hover-target {
     pointer-events: none;
     z-index: 9998;
     transition: width 0.2s, height 0.2s, background-color 0.2s;
+}
+
+/* Click Ripple Effect */
+.cursor-click-effect {
+    position: fixed;
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9997;
+    transform: translate(-50%, -50%);
+    animation: clickRipple 0.6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+@keyframes clickRipple {
+    0% { width: 0; height: 0; opacity: 1; border-width: 4px; }
+    100% { width: 120px; height: 120px; opacity: 0; border-width: 1px; }
 }
 
 /* 3D Canvas Background */
@@ -187,7 +202,7 @@ a, button, .hover-target {
 /* Sections Global */
 .section-heading {
     font-family: var(--font-heading);
-    font-size: 5vw;
+    font-size: 4vw; /* Reduced slightly from 5vw */
     font-weight: 600;
     color: var(--text-main);
     margin-bottom: 4rem;

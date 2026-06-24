@@ -5,6 +5,7 @@ let mouseX = window.innerWidth / 2;
 let mouseY = window.innerHeight / 2;
 let outlineX = mouseX;
 let outlineY = mouseY;
+let clickScatterForce = 0; // For 3D interaction
 
 window.addEventListener('mousemove', (e) => {
     mouseX = e.clientX;
@@ -12,6 +13,23 @@ window.addEventListener('mousemove', (e) => {
     
     cursorDot.style.left = `${mouseX}px`;
     cursorDot.style.top = `${mouseY}px`;
+});
+
+// Click Ripple Animation & Scatter Trigger
+window.addEventListener('mousedown', (e) => {
+    // DOM Ripple
+    const ripple = document.createElement('div');
+    ripple.classList.add('cursor-click-effect');
+    ripple.style.left = `${e.clientX}px`;
+    ripple.style.top = `${e.clientY}px`;
+    document.body.appendChild(ripple);
+    
+    setTimeout(() => {
+        ripple.remove();
+    }, 600);
+    
+    // 3D Scatter trigger
+    clickScatterForce = 150; 
 });
 
 function animateCursor() {
@@ -60,37 +78,23 @@ gsap.to(".hero-content", {
 });
 
 // Staggered Title Letters (Hero)
-const titleText = document.querySelector('.hero-title:not(.outline-text)');
-if (titleText) {
-    const text = titleText.innerText;
-    titleText.innerHTML = '';
+const titles = document.querySelectorAll('.hero-title');
+titles.forEach((title, index) => {
+    const text = title.innerText;
+    title.innerHTML = '';
     text.split('').forEach(char => {
         const span = document.createElement('span');
         span.innerText = char;
         span.style.display = 'inline-block';
-        titleText.appendChild(span);
+        title.appendChild(span);
     });
-    gsap.fromTo(titleText.querySelectorAll('span'), 
+    
+    // Stagger in with delay based on which word it is
+    gsap.fromTo(title.querySelectorAll('span'), 
         { y: 100, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, stagger: 0.1, ease: "power4.out", delay: 0.2 }
+        { y: 0, opacity: 1, duration: 1, stagger: 0.1, ease: "power4.out", delay: 0.2 + (index * 0.4) }
     );
-}
-
-const titleOutline = document.querySelector('.hero-title.outline-text');
-if (titleOutline) {
-    const text = titleOutline.innerText;
-    titleOutline.innerHTML = '';
-    text.split('').forEach(char => {
-        const span = document.createElement('span');
-        span.innerText = char;
-        span.style.display = 'inline-block';
-        titleOutline.appendChild(span);
-    });
-    gsap.fromTo(titleOutline.querySelectorAll('span'), 
-        { y: 100, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, stagger: 0.1, ease: "power4.out", delay: 0.4 }
-    );
-}
+});
 
 // Basic Section Reveals
 const revealUpElements = document.querySelectorAll('.reveal-up, .section-heading');
@@ -190,7 +194,7 @@ magneticEls.forEach(el => {
     });
 });
 
-// --- 3. Immersive 3D Scene (Helix + Side Crystals + Deep Space) ---
+// --- 3. Immersive 3D Scene (Helix + Crystals + Deep Space + Comets) ---
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 
@@ -205,7 +209,7 @@ camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // optimize performance
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
 container.appendChild(renderer.domElement);
 
 // Reusable Glow Texture
@@ -308,7 +312,7 @@ const netPoints = new THREE.Points(netGeo, netMaterial);
 scene.add(netPoints);
 
 const lineMaterial = new THREE.LineBasicMaterial({
-    color: 0x4ade80, // Electric green connections
+    color: 0x4ade80, 
     transparent: true,
     opacity: 0.25,
     blending: THREE.AdditiveBlending
@@ -322,9 +326,8 @@ const nebulaGeo = new THREE.BufferGeometry();
 const nebulaPos = new Float32Array(nebulaCount * 3);
 
 for(let i = 0; i < nebulaCount; i++) {
-    // Spread in a massive wide cylinder OUTSIDE the helix
     let angle = Math.random() * Math.PI * 2;
-    let radius = 400 + Math.random() * 600; // Far away
+    let radius = 400 + Math.random() * 600; 
     
     nebulaPos[i * 3] = Math.cos(angle) * radius;
     nebulaPos[i * 3 + 1] = (Math.random() - 0.5) * 2000;
@@ -332,7 +335,7 @@ for(let i = 0; i < nebulaCount; i++) {
 }
 nebulaGeo.setAttribute('position', new THREE.BufferAttribute(nebulaPos, 3));
 const nebulaMat = new THREE.PointsMaterial({
-    color: 0x222255, // Deep purple/blue
+    color: 0x222255, 
     size: 15,
     map: glowTexture,
     transparent: true,
@@ -346,7 +349,6 @@ scene.add(nebula);
 // --- 3D. Floating Data Crystals (On the Sides) ---
 const crystals = [];
 const crystalGeo = new THREE.IcosahedronGeometry(25, 0);
-// Array of glowing materials
 const crystalMats = [
     new THREE.MeshBasicMaterial({ color: 0x00f0ff, wireframe: true, transparent: true, opacity: 0.3 }),
     new THREE.MeshBasicMaterial({ color: 0xff0055, wireframe: true, transparent: true, opacity: 0.3 }),
@@ -357,7 +359,6 @@ for(let i = 0; i < 40; i++) {
     let mat = crystalMats[Math.floor(Math.random() * crystalMats.length)];
     let mesh = new THREE.Mesh(crystalGeo, mat);
     
-    // Position on far left or right
     let side = Math.random() > 0.5 ? 1 : -1;
     mesh.position.x = side * (250 + Math.random() * 200);
     mesh.position.y = (Math.random() - 0.5) * 1500;
@@ -372,6 +373,32 @@ for(let i = 0; i < 40; i++) {
     
     scene.add(mesh);
     crystals.push(mesh);
+}
+
+// --- 3E. Shooting Comets ---
+const cometCount = 5;
+const comets = [];
+const cometGeo = new THREE.CylinderGeometry(1, 1, 100, 4);
+cometGeo.rotateX(Math.PI / 2);
+const cometMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.8,
+    blending: THREE.AdditiveBlending
+});
+
+for(let i=0; i<cometCount; i++) {
+    let comet = new THREE.Mesh(cometGeo, cometMat);
+    resetComet(comet);
+    scene.add(comet);
+    comets.push(comet);
+}
+
+function resetComet(comet) {
+    comet.position.x = (Math.random() - 0.5) * 600;
+    comet.position.y = 800 + Math.random() * 400; // Start high up
+    comet.position.z = (Math.random() - 0.5) * 600;
+    comet.userData.speed = 10 + Math.random() * 20; // Fall down fast
 }
 
 
@@ -396,7 +423,7 @@ function animateThree() {
     
     // Rotate elements
     gasHelix.rotation.y = time * 0.08;
-    nebula.rotation.y = time * 0.02; // slow background rotation
+    nebula.rotation.y = time * 0.02; 
     
     // Animate Crystals
     crystals.forEach(c => {
@@ -405,27 +432,55 @@ function animateThree() {
         c.rotation.z += c.userData.rz;
         c.position.y += c.userData.floatSpeed;
         
-        // Loop back if they float too far
         if(c.position.y > 800) c.position.y = -800;
         if(c.position.y < -800) c.position.y = 800;
+    });
+    
+    // Animate Comets
+    comets.forEach(c => {
+        c.position.y -= c.userData.speed;
+        if(c.position.y < -800) {
+            resetComet(c);
+        }
     });
 
     // Animate Neural Network nodes
     const nPos = netPoints.geometry.attributes.position.array;
     const linePositions = [];
     
+    // Click Scatter Effect Decay
+    if (clickScatterForce > 0) {
+        clickScatterForce *= 0.9; // decay force smoothly
+    }
+    
     for (let i = 0; i < netCount; i++) {
         let ix = i * 3;
         let iy = i * 3 + 1;
         let iz = i * 3 + 2;
         
+        // Base velocity
         nPos[ix] += netVelocities[i].x;
         nPos[iy] += netVelocities[i].y;
         nPos[iz] += netVelocities[i].z;
         
-        if (Math.abs(nPos[ix]) > 150) netVelocities[i].x *= -1;
-        if (Math.abs(nPos[iy]) > 400) netVelocities[i].y *= -1;
-        if (Math.abs(nPos[iz]) > 150) netVelocities[i].z *= -1;
+        // Apply Click Scatter force outward from center
+        if (clickScatterForce > 1) {
+            let dist = Math.sqrt(nPos[ix]*nPos[ix] + nPos[iy]*nPos[iy] + nPos[iz]*nPos[iz]);
+            if(dist > 0) {
+                nPos[ix] += (nPos[ix] / dist) * clickScatterForce * 0.05;
+                nPos[iy] += (nPos[iy] / dist) * clickScatterForce * 0.05;
+                nPos[iz] += (nPos[iz] / dist) * clickScatterForce * 0.05;
+            }
+        }
+        
+        // Return slowly towards center if scattered too far
+        if (Math.abs(nPos[ix]) > 200) nPos[ix] *= 0.99;
+        if (Math.abs(nPos[iz]) > 200) nPos[iz] *= 0.99;
+        
+        // Bounding box bounce
+        if (Math.abs(nPos[ix]) > 250) netVelocities[i].x *= -1;
+        if (Math.abs(nPos[iy]) > 600) netVelocities[i].y *= -1;
+        if (Math.abs(nPos[iz]) > 250) netVelocities[i].z *= -1;
         
         for (let j = i + 1; j < netCount; j++) {
             let jx = j * 3;
