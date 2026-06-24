@@ -10,12 +10,10 @@ window.addEventListener('mousemove', (e) => {
     mouseX = e.clientX;
     mouseY = e.clientY;
     
-    // Dot follows exactly
     cursorDot.style.left = `${mouseX}px`;
     cursorDot.style.top = `${mouseY}px`;
 });
 
-// Animate outline with easing
 function animateCursor() {
     let dx = mouseX - outlineX;
     let dy = mouseY - outlineY;
@@ -30,7 +28,6 @@ function animateCursor() {
 }
 animateCursor();
 
-// Hover Effects for cursor
 const hoverTargets = document.querySelectorAll('.hover-target');
 hoverTargets.forEach(target => {
     target.addEventListener('mouseenter', () => {
@@ -48,7 +45,6 @@ hoverTargets.forEach(target => {
 // --- 2. GSAP Scroll Animations ---
 gsap.registerPlugin(ScrollTrigger);
 
-// Hero Parallax
 gsap.to(".hero-content", {
     yPercent: 50,
     ease: "none",
@@ -60,7 +56,6 @@ gsap.to(".hero-content", {
     }
 });
 
-// Reveal Up Animation
 const revealUpElements = document.querySelectorAll('.reveal-up');
 revealUpElements.forEach(el => {
     gsap.fromTo(el, 
@@ -72,14 +67,13 @@ revealUpElements.forEach(el => {
             ease: "power3.out",
             scrollTrigger: {
                 trigger: el,
-                start: "top 85%", // Trigger when element is 85% down the viewport
+                start: "top 85%",
                 toggleActions: "play none none reverse"
             }
         }
     );
 });
 
-// Magnetic Buttons
 const magneticEls = document.querySelectorAll('.magnetic');
 magneticEls.forEach(el => {
     el.addEventListener('mousemove', (e) => {
@@ -105,102 +99,224 @@ magneticEls.forEach(el => {
     });
 });
 
-// --- 3. Immersive "Warp Speed" Three.js Background ---
+// --- 3. Immersive Colorful Helix & Neural Network Background ---
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 
+// Fog to blend particles into the distance
+scene.fog = new THREE.FogExp2(0x050505, 0.002);
+
 // Camera setup
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
-camera.position.z = 1;
-camera.rotation.x = Math.PI / 2; // Looking straight down the tunnel
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000);
+camera.position.z = 300;
+camera.position.y = 100;
+camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
+// Use additive blending for glowing effect
 container.appendChild(renderer.domElement);
 
-// Stars setup
-const starCount = 6000;
-const starGeo = new THREE.BufferGeometry();
-const starPositions = new Float32Array(starCount * 3);
-const starVelocities = new Float32Array(starCount);
+// --- Particle Textures (Soft Glow) ---
+function createGlowTexture() {
+    let canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    let context = canvas.getContext('2d');
+    let gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gradient.addColorStop(0, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+    gradient.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 32, 32);
+    let texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+}
+const glowTexture = createGlowTexture();
 
-for (let i = 0; i < starCount; i++) {
-    // Spread stars in a wide cylinder shape
-    starPositions[i * 3] = Math.random() * 600 - 300;     // x
-    starPositions[i * 3 + 1] = Math.random() * 600 - 300; // y
-    starPositions[i * 3 + 2] = Math.random() * 600 - 300; // z
+// --- 3A. Gaseous Colorful Helix ---
+const gasCount = 15000;
+const gasGeo = new THREE.BufferGeometry();
+const gasPositions = new Float32Array(gasCount * 3);
+const gasColors = new Float32Array(gasCount * 3);
+// For animation
+const gasPhases = new Float32Array(gasCount);
+
+const colorCyan = new THREE.Color(0x00f0ff);
+const colorMagenta = new THREE.Color(0xff0055);
+const colorPurple = new THREE.Color(0x8a2be2);
+
+for (let i = 0; i < gasCount; i++) {
+    // 3 arms of the helix
+    let arm = i % 3;
+    let t = Math.random() * Math.PI * 40; // Height spread (20 turns)
     
-    // Initial velocity
-    starVelocities[i] = 0;
+    // Spread for gaseous volume
+    let radius = 60 + Math.random() * 40; 
+    let angleOffset = (arm * Math.PI * 2) / 3;
+    
+    let x = radius * Math.cos(t + angleOffset);
+    let y = (t - Math.PI * 20) * 12; // vertical spread from -something to +something
+    let z = radius * Math.sin(t + angleOffset);
+    
+    // Add noise for a fuzzy, cloud-like distribution
+    x += (Math.random() - 0.5) * 60;
+    y += (Math.random() - 0.5) * 60;
+    z += (Math.random() - 0.5) * 60;
+    
+    gasPositions[i * 3] = x;
+    gasPositions[i * 3 + 1] = y;
+    gasPositions[i * 3 + 2] = z;
+    
+    // Mix Colors
+    let mixColor = arm === 0 ? colorCyan : (arm === 1 ? colorMagenta : colorPurple);
+    gasColors[i * 3] = mixColor.r;
+    gasColors[i * 3 + 1] = mixColor.g;
+    gasColors[i * 3 + 2] = mixColor.b;
+
+    // Random phase for wafting animation
+    gasPhases[i] = Math.random() * Math.PI * 2;
 }
 
-starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-starGeo.setAttribute('velocity', new THREE.BufferAttribute(starVelocities, 1));
+gasGeo.setAttribute('position', new THREE.BufferAttribute(gasPositions, 3));
+gasGeo.setAttribute('color', new THREE.BufferAttribute(gasColors, 3));
+gasGeo.setAttribute('phase', new THREE.BufferAttribute(gasPhases, 1));
 
-// Custom texture for glowing stars
-let canvas = document.createElement('canvas');
-canvas.width = 16;
-canvas.height = 16;
-let context = canvas.getContext('2d');
-let gradient = context.createRadialGradient(8, 8, 0, 8, 8, 8);
-gradient.addColorStop(0, 'rgba(255,255,255,1)');
-gradient.addColorStop(0.2, 'rgba(74,222,128,1)'); // electric green core
-gradient.addColorStop(0.4, 'rgba(74,222,128,0.3)');
-gradient.addColorStop(1, 'rgba(0,0,0,0)');
-context.fillStyle = gradient;
-context.fillRect(0, 0, 16, 16);
-let texture = new THREE.Texture(canvas);
-texture.needsUpdate = true;
-
-const starMaterial = new THREE.PointsMaterial({
-    color: 0x4ade80,
-    size: 1.5,
-    map: texture,
+const gasMaterial = new THREE.PointsMaterial({
+    size: 6,
+    vertexColors: true,
+    map: glowTexture,
     transparent: true,
+    opacity: 0.4,
     blending: THREE.AdditiveBlending,
     depthWrite: false
 });
 
-const stars = new THREE.Points(starGeo, starMaterial);
-scene.add(stars);
+const gasHelix = new THREE.Points(gasGeo, gasMaterial);
+scene.add(gasHelix);
 
-// Mouse parallax effect
+// --- 3B. Neural Network ---
+// A sparse collection of points inside the helix that draw connecting lines
+const netCount = 200;
+const netGeo = new THREE.BufferGeometry();
+const netPositions = new Float32Array(netCount * 3);
+const netVelocities = [];
+
+for (let i = 0; i < netCount; i++) {
+    netPositions[i * 3] = (Math.random() - 0.5) * 300;
+    netPositions[i * 3 + 1] = (Math.random() - 0.5) * 600;
+    netPositions[i * 3 + 2] = (Math.random() - 0.5) * 300;
+    
+    netVelocities.push({
+        x: (Math.random() - 0.5) * 0.5,
+        y: (Math.random() - 0.5) * 0.5,
+        z: (Math.random() - 0.5) * 0.5
+    });
+}
+netGeo.setAttribute('position', new THREE.BufferAttribute(netPositions, 3));
+
+const netMaterial = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 3,
+    map: glowTexture,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+});
+const netPoints = new THREE.Points(netGeo, netMaterial);
+scene.add(netPoints);
+
+// The lines representing neural connections
+const lineMaterial = new THREE.LineBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.15,
+    blending: THREE.AdditiveBlending
+});
+let lineMesh = new THREE.LineSegments(new THREE.BufferGeometry(), lineMaterial);
+scene.add(lineMesh);
+
+// Mouse parallax effect setup
 let targetMouseX = 0;
 let targetMouseY = 0;
 window.addEventListener('mousemove', (event) => {
-    targetMouseX = (event.clientX - window.innerWidth / 2) * 0.0005;
-    targetMouseY = (event.clientY - window.innerHeight / 2) * 0.0005;
+    targetMouseX = (event.clientX - window.innerWidth / 2) * 0.001;
+    targetMouseY = (event.clientY - window.innerHeight / 2) * 0.001;
 });
+
+// Scroll interaction
+let scrollY = window.scrollY;
+window.addEventListener('scroll', () => {
+    scrollY = window.scrollY;
+});
+
+const clock = new THREE.Clock();
 
 function animateThree() {
     requestAnimationFrame(animateThree);
+    const time = clock.getElapsedTime();
     
-    const positions = starGeo.attributes.position.array;
-    const velocities = starGeo.attributes.velocity.array;
+    // 1. Rotate the whole gaseous helix
+    gasHelix.rotation.y = time * 0.1;
     
-    for (let i = 0; i < starCount; i++) {
-        // Accelerate stars towards camera (falling effect)
-        velocities[i] += 0.02;
-        let yIndex = i * 3 + 1;
+    // Wafting gas effect (optional sine wave distortion on geometry, but expensive)
+    // Instead, we just rotate it, and use additive blending to make it look fluid.
+
+    // 2. Animate Neural Network nodes
+    const nPos = netPoints.geometry.attributes.position.array;
+    const linePositions = [];
+    
+    for (let i = 0; i < netCount; i++) {
+        let ix = i * 3;
+        let iy = i * 3 + 1;
+        let iz = i * 3 + 2;
         
-        positions[yIndex] -= velocities[i];
+        // Move nodes
+        nPos[ix] += netVelocities[i].x;
+        nPos[iy] += netVelocities[i].y;
+        nPos[iz] += netVelocities[i].z;
         
-        // If star goes past camera, reset it far away
-        if (positions[yIndex] < -200) {
-            positions[yIndex] = 200;
-            velocities[i] = 0;
+        // Bounding box bounce
+        if (Math.abs(nPos[ix]) > 150) netVelocities[i].x *= -1;
+        if (Math.abs(nPos[iy]) > 400) netVelocities[i].y *= -1;
+        if (Math.abs(nPos[iz]) > 150) netVelocities[i].z *= -1;
+        
+        // Form connections if close enough
+        for (let j = i + 1; j < netCount; j++) {
+            let jx = j * 3;
+            let jy = j * 3 + 1;
+            let jz = j * 3 + 2;
+            
+            let dx = nPos[ix] - nPos[jx];
+            let dy = nPos[iy] - nPos[jy];
+            let dz = nPos[iz] - nPos[jz];
+            let distSq = dx*dx + dy*dy + dz*dz;
+            
+            // Connect if distance squared < 5000 (roughly ~70 units)
+            if (distSq < 5000) {
+                linePositions.push(
+                    nPos[ix], nPos[iy], nPos[iz],
+                    nPos[jx], nPos[jy], nPos[jz]
+                );
+            }
         }
     }
+    netPoints.geometry.attributes.position.needsUpdate = true;
     
-    starGeo.attributes.position.needsUpdate = true;
+    // Update lines geometry
+    lineMesh.geometry.dispose();
+    lineMesh.geometry = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
     
-    // Smooth camera rotation based on mouse
-    camera.rotation.y += (targetMouseX - camera.rotation.y) * 0.05;
-    camera.rotation.x += (-targetMouseY + Math.PI / 2 - camera.rotation.x) * 0.05;
+    // 3. Move camera smoothly based on mouse (parallax) and scroll
+    camera.position.x += (targetMouseX * 100 - camera.position.x) * 0.05;
+    // Base Y is 100, scroll pushes camera down the helix
+    let targetCamY = 100 - scrollY * 0.2; 
+    camera.position.y += (targetCamY - camera.position.y) * 0.05;
     
-    // Rotate the whole starfield slowly
-    stars.rotation.y += 0.002;
+    camera.lookAt(0, targetCamY - 100, 0);
 
     renderer.render(scene, camera);
 }
