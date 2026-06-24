@@ -15,9 +15,9 @@
     box-sizing: border-box;
 }
 
-/* Hide default cursor */
+/* Hide default cursor and set transparent bg so canvas shows through */
 body, html {
-    background-color: var(--bg);
+    background-color: transparent; /* Changed from var(--bg) so canvas is visible */
     color: var(--text-main);
     font-family: var(--font-body);
     cursor: none !important;
@@ -66,6 +66,12 @@ a, button, .hover-target {
     width: 100vw;
     height: 100vh;
     z-index: -1;
+    background-color: var(--bg); /* Dark background goes here */
+}
+
+.smooth-scroll-wrapper {
+    position: relative;
+    z-index: 1;
 }
 
 /* Navigation */
@@ -197,9 +203,10 @@ a, button, .hover-target {
 }
 
 .lead-text {
-    font-size: 2rem;
-    line-height: 1.4;
+    font-size: 1.5rem;
+    line-height: 1.6;
     font-weight: 300;
+    color: var(--text-dim);
 }
 
 .skills-container {
@@ -239,27 +246,37 @@ a, button, .hover-target {
 }
 
 .exp-meta span {
+    display: block;
     color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 1px;
     font-size: 0.9rem;
+    margin-bottom: 0.5rem;
 }
 
-.exp-details {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.exp-details p {
-    font-size: 1.2rem;
-    max-width: 600px;
-}
-
-.exp-details .date {
-    font-size: 1.2rem;
+.exp-meta .date {
+    color: var(--accent);
     font-weight: 600;
-    font-family: var(--font-heading);
+}
+
+.exp-details ul {
+    list-style-type: none;
+    color: var(--text-main);
+}
+
+.exp-details li {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    position: relative;
+    padding-left: 20px;
+}
+
+.exp-details li::before {
+    content: '▹';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
 }
 
 /* Projects Section */
@@ -293,13 +310,27 @@ a, button, .hover-target {
 
 .project-card h3 {
     font-family: var(--font-heading);
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
+    font-size: 2.2rem;
+    margin-bottom: 1.5rem;
 }
 
-.project-card p {
+.project-card ul {
+    list-style-type: none;
     color: var(--text-dim);
-    font-size: 1.1rem;
+}
+
+.project-card li {
+    font-size: 1rem;
+    margin-bottom: 0.8rem;
+    position: relative;
+    padding-left: 15px;
+}
+
+.project-card li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--text-main);
 }
 
 /* Footer */

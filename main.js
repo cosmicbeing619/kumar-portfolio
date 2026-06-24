@@ -63,17 +63,20 @@ gsap.to(".hero-content", {
 // Reveal Up Animation
 const revealUpElements = document.querySelectorAll('.reveal-up');
 revealUpElements.forEach(el => {
-    gsap.to(el, {
-        scrollTrigger: {
-            trigger: el,
-            start: "top 85%",
-            toggleActions: "play none none reverse"
-        },
-        y: 0,
-        opacity: 1,
-        duration: 1,
-        ease: "power3.out"
-    });
+    gsap.fromTo(el, 
+        { y: 50, opacity: 0 },
+        {
+            y: 0,
+            opacity: 1,
+            duration: 1,
+            ease: "power3.out",
+            scrollTrigger: {
+                trigger: el,
+                start: "top 85%", // Trigger when element is 85% down the viewport
+                toggleActions: "play none none reverse"
+            }
+        }
+    );
 });
 
 // Magnetic Buttons
@@ -102,139 +105,108 @@ magneticEls.forEach(el => {
     });
 });
 
-// --- 3. Advanced Three.js Neural Network ---
+// --- 3. Immersive "Warp Speed" Three.js Background ---
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 200;
+
+// Camera setup
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+camera.position.z = 1;
+camera.rotation.x = Math.PI / 2; // Looking straight down the tunnel
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 container.appendChild(renderer.domElement);
 
-// Particles setup
-const particleCount = 400; // optimized for lines
-const particles = new THREE.BufferGeometry();
-const particlePositions = new Float32Array(particleCount * 3);
-const particleVelocities = [];
+// Stars setup
+const starCount = 6000;
+const starGeo = new THREE.BufferGeometry();
+const starPositions = new Float32Array(starCount * 3);
+const starVelocities = new Float32Array(starCount);
 
-for (let i = 0; i < particleCount; i++) {
-    particlePositions[i * 3] = (Math.random() - 0.5) * 400;
-    particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 400;
-    particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 400;
+for (let i = 0; i < starCount; i++) {
+    // Spread stars in a wide cylinder shape
+    starPositions[i * 3] = Math.random() * 600 - 300;     // x
+    starPositions[i * 3 + 1] = Math.random() * 600 - 300; // y
+    starPositions[i * 3 + 2] = Math.random() * 600 - 300; // z
     
-    particleVelocities.push({
-        x: (Math.random() - 0.5) * 0.2,
-        y: (Math.random() - 0.5) * 0.2,
-        z: (Math.random() - 0.5) * 0.2
-    });
+    // Initial velocity
+    starVelocities[i] = 0;
 }
 
-particles.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+starGeo.setAttribute('velocity', new THREE.BufferAttribute(starVelocities, 1));
 
-const particleMaterial = new THREE.PointsMaterial({
+// Custom texture for glowing stars
+let canvas = document.createElement('canvas');
+canvas.width = 16;
+canvas.height = 16;
+let context = canvas.getContext('2d');
+let gradient = context.createRadialGradient(8, 8, 0, 8, 8, 8);
+gradient.addColorStop(0, 'rgba(255,255,255,1)');
+gradient.addColorStop(0.2, 'rgba(74,222,128,1)'); // electric green core
+gradient.addColorStop(0.4, 'rgba(74,222,128,0.3)');
+gradient.addColorStop(1, 'rgba(0,0,0,0)');
+context.fillStyle = gradient;
+context.fillRect(0, 0, 16, 16);
+let texture = new THREE.Texture(canvas);
+texture.needsUpdate = true;
+
+const starMaterial = new THREE.PointsMaterial({
     color: 0x4ade80,
-    size: 2,
+    size: 1.5,
+    map: texture,
     transparent: true,
-    opacity: 0.8
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
 });
 
-const particleSystem = new THREE.Points(particles, particleMaterial);
-scene.add(particleSystem);
+const stars = new THREE.Points(starGeo, starMaterial);
+scene.add(stars);
 
-// Lines setup
-const lineMaterial = new THREE.LineBasicMaterial({
-    color: 0x4ade80,
-    transparent: true,
-    opacity: 0.15
-});
-
-// We will recreate geometry for lines every frame
-let lineGeometry = new THREE.BufferGeometry();
-let linesMesh = new THREE.LineSegments(lineGeometry, lineMaterial);
-scene.add(linesMesh);
-
-// Convert mouse position to 3D space
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-let mouse3D = new THREE.Vector3(0, 0, 0);
-
+// Mouse parallax effect
+let targetMouseX = 0;
+let targetMouseY = 0;
 window.addEventListener('mousemove', (event) => {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    
-    raycaster.setFromCamera(mouse, camera);
-    raycaster.ray.at(200, mouse3D);
+    targetMouseX = (event.clientX - window.innerWidth / 2) * 0.0005;
+    targetMouseY = (event.clientY - window.innerHeight / 2) * 0.0005;
 });
 
 function animateThree() {
     requestAnimationFrame(animateThree);
     
-    const positions = particleSystem.geometry.attributes.position.array;
-    const linePositions = [];
+    const positions = starGeo.attributes.position.array;
+    const velocities = starGeo.attributes.velocity.array;
     
-    // Update particle positions and check connections
-    for (let i = 0; i < particleCount; i++) {
-        let ix = i * 3;
-        let iy = i * 3 + 1;
-        let iz = i * 3 + 2;
+    for (let i = 0; i < starCount; i++) {
+        // Accelerate stars towards camera (falling effect)
+        velocities[i] += 0.02;
+        let yIndex = i * 3 + 1;
         
-        // Move
-        positions[ix] += particleVelocities[i].x;
-        positions[iy] += particleVelocities[i].y;
-        positions[iz] += particleVelocities[i].z;
+        positions[yIndex] -= velocities[i];
         
-        // Mouse interaction (Repel)
-        let dxMouse = positions[ix] - mouse3D.x;
-        let dyMouse = positions[iy] - mouse3D.y;
-        let distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
-        
-        if (distMouse < 50) {
-            let force = (50 - distMouse) * 0.02;
-            positions[ix] += (dxMouse / distMouse) * force;
-            positions[iy] += (dyMouse / distMouse) * force;
-        }
-
-        // Bounce off walls
-        if (Math.abs(positions[ix]) > 200) particleVelocities[i].x *= -1;
-        if (Math.abs(positions[iy]) > 200) particleVelocities[i].y *= -1;
-        if (Math.abs(positions[iz]) > 200) particleVelocities[i].z *= -1;
-        
-        // Check connections
-        for (let j = i + 1; j < particleCount; j++) {
-            let jx = j * 3;
-            let jy = j * 3 + 1;
-            let jz = j * 3 + 2;
-            
-            let dx = positions[ix] - positions[jx];
-            let dy = positions[iy] - positions[jy];
-            let dz = positions[iz] - positions[jz];
-            let dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            
-            if (dist < 35) {
-                linePositions.push(
-                    positions[ix], positions[iy], positions[iz],
-                    positions[jx], positions[jy], positions[jz]
-                );
-            }
+        // If star goes past camera, reset it far away
+        if (positions[yIndex] < -200) {
+            positions[yIndex] = 200;
+            velocities[i] = 0;
         }
     }
     
-    particleSystem.geometry.attributes.position.needsUpdate = true;
+    starGeo.attributes.position.needsUpdate = true;
     
-    // Update lines
-    linesMesh.geometry.dispose();
-    linesMesh.geometry = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+    // Smooth camera rotation based on mouse
+    camera.rotation.y += (targetMouseX - camera.rotation.y) * 0.05;
+    camera.rotation.x += (-targetMouseY + Math.PI / 2 - camera.rotation.x) * 0.05;
     
-    // Slight rotation of the whole system
-    particleSystem.rotation.y += 0.001;
-    linesMesh.rotation.y += 0.001;
+    // Rotate the whole starfield slowly
+    stars.rotation.y += 0.002;
 
     renderer.render(scene, camera);
 }
 animateThree();
 
+// Resize handler
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();

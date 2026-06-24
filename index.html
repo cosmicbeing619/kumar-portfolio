@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kumar Mantha | Neural Architecture</title>
+    <title>Kumar Mantha | Data Science Portfolio</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,17 +19,18 @@
     <div class="cursor-dot" id="cursor-dot"></div>
     <div class="cursor-outline" id="cursor-outline"></div>
 
-    <!-- 3D Background -->
+    <!-- 3D Background MUST be behind everything -->
     <div id="canvas-container"></div>
 
     <div class="smooth-scroll-wrapper">
         <!-- Navigation -->
-        <nav class="glass-nav gsap-nav">
-            <div class="logo magnetic">KM_</div>
+        <nav class="glass-nav">
+            <div class="logo magnetic hover-target">KM_</div>
             <div class="nav-links">
-                <a href="#about" class="magnetic hover-target">About</a>
+                <a href="#about" class="magnetic hover-target">Summary</a>
                 <a href="#experience" class="magnetic hover-target">Experience</a>
                 <a href="#projects" class="magnetic hover-target">Projects</a>
+                <a href="#education" class="magnetic hover-target">Education</a>
             </div>
         </nav>
 
@@ -38,39 +39,40 @@
             <section class="hero" id="home">
                 <div class="hero-content">
                     <div class="reveal-text">
-                        <h1 class="hero-title">DATA</h1>
+                        <h1 class="hero-title">KUMAR</h1>
                     </div>
                     <div class="reveal-text">
-                        <h1 class="hero-title outline-text">ARCHITECT</h1>
+                        <h1 class="hero-title outline-text">MANTHA</h1>
                     </div>
                     <div class="hero-meta reveal-up">
-                        <p>Kumar Mantha <br> Systems Engineer & ML Expert</p>
+                        <p>Data Analyst & Systems Engineer<br>Expert in Predictive Modeling & BI</p>
                         <div class="scroll-indicator">
-                            <span>Scroll to explore</span>
+                            <span>Scroll</span>
                             <div class="line"></div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- About / Skills -->
+            <!-- Summary / Skills -->
             <section class="about section" id="about">
                 <div class="container">
                     <div class="reveal-text">
-                        <h2 class="section-heading">01. ALGORITHMS</h2>
+                        <h2 class="section-heading">01. PROFESSIONAL SUMMARY</h2>
                     </div>
                     <div class="about-grid">
-                        <p class="lead-text reveal-up">
-                            Bridging the gap between raw data and actionable intelligence. I build predictive models, forecasting pipelines, and BI solutions that drive business outcomes.
-                        </p>
+                        <div class="reveal-up">
+                            <p class="lead-text">
+                                Data Analyst with 3+ years of experience building predictive models, forecasting pipelines, and BI solutions across banking and telecommunications. Reduced client financial penalties by 61% through a hybrid ensemble forecasting system; Won 1st place at UTA's Datathon with 82% model accuracy. Skilled in Python, SQL, machine learning, time-series forecasting, and Power BI with growing expertise in LLMs, RAG, and Agentic Engineering.
+                            </p>
+                        </div>
                         <div class="skills-container reveal-up">
-                            <div class="skill-tag hover-target">Python</div>
-                            <div class="skill-tag hover-target">SQL</div>
-                            <div class="skill-tag hover-target">LightGBM</div>
-                            <div class="skill-tag hover-target">Agentic Engineering</div>
-                            <div class="skill-tag hover-target">LLMs / RAG</div>
-                            <div class="skill-tag hover-target">Power BI</div>
-                            <div class="skill-tag hover-target">Azure</div>
+                            <div class="skill-tag hover-target">Python, SQL, PL/SQL, Unix Shell</div>
+                            <div class="skill-tag hover-target">LightGBM, Random Forest, XGBoost</div>
+                            <div class="skill-tag hover-target">Time-Series Forecasting</div>
+                            <div class="skill-tag hover-target">Generative AI & Agentic Engineering</div>
+                            <div class="skill-tag hover-target">Power BI, Tableau, Marimo</div>
+                            <div class="skill-tag hover-target">Azure, ServiceNow, IBM MQ</div>
                         </div>
                     </div>
                 </div>
@@ -80,28 +82,40 @@
             <section class="experience section" id="experience">
                 <div class="container">
                     <div class="reveal-text">
-                        <h2 class="section-heading">02. TRAJECTORY</h2>
+                        <h2 class="section-heading">02. WORK EXPERIENCE</h2>
                     </div>
                     
                     <div class="exp-item reveal-up hover-target">
                         <div class="exp-meta">
                             <h3>Senior Systems Engineer</h3>
-                            <span>Infosys Limited</span>
+                            <span>Infosys Limited | Data Analytics</span>
+                            <span class="date">Sep 2022 - Jul 2024</span>
                         </div>
                         <div class="exp-details">
-                            <p>Engineered contingency ETL pipelines eliminating 99% of data outages. Processed 1M+ daily records using PL/SQL.</p>
-                            <span class="date">2022 - 2024</span>
+                            <ul>
+                                <li>Drove a 34% increase in user engagement by conducting deep-dive SQL analysis on product usage patterns and translating findings into actionable feature recommendations.</li>
+                                <li>Eliminated 99% of daily data outages by engineering a contingency ETL pipeline with automated failover, reducing manual incident response time from hours to minutes.</li>
+                                <li>Processed and analyzed 1M+ daily records using PL/SQL and ServiceNow, enabling real-time visibility into operations across four enterprise applications.</li>
+                                <li>Built executive-facing Power BI dashboards and KPI reporting frameworks that consolidated revenue and operational metrics, reducing ad-hoc reporting requests.</li>
+                                <li>Led quarterly cross-application migrations, coordinating across engineering and business stakeholders to deliver zero-downtime transitions.</li>
+                            </ul>
                         </div>
                     </div>
 
                     <div class="exp-item reveal-up hover-target">
                         <div class="exp-meta">
                             <h3>Assistant Systems Engineer</h3>
-                            <span>Tata Consultancy Services</span>
+                            <span>Tata Consultancy Services | Data Analytics</span>
+                            <span class="date">May 2021 - Sep 2022</span>
                         </div>
                         <div class="exp-details">
-                            <p>Ensured 99.9% uptime for payment systems processing millions of daily financial operations for the Reserve Bank of India.</p>
-                            <span class="date">2021 - 2022</span>
+                            <ul>
+                                <li>Ensured 99.9% uptime for NEFT and RTGS payment systems processing real-time transactions for the Reserve Bank of India, supporting millions of daily financial operations.</li>
+                                <li>Migrated 30M+ records daily using SQL-based disaster recovery pipelines, reducing recovery time and safeguarding data integrity across production systems.</li>
+                                <li>Improved IBM MQ message throughput by optimizing queue configurations and eliminating bottlenecks, reducing message processing latency.</li>
+                                <li>Automated recurring reconciliation and reporting processes using SQL and Shell scripting, saving an estimated 10+ hours of manual work per week.</li>
+                                <li>Mentored 7 junior engineers on SQL best practices, incident management workflows, and system monitoring tools, accelerating their onboarding by 4 weeks.</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -111,44 +125,82 @@
             <section class="projects section" id="projects">
                 <div class="container">
                     <div class="reveal-text">
-                        <h2 class="section-heading">03. EXECUTION</h2>
+                        <h2 class="section-heading">03. PROJECTS & ACHIEVEMENTS</h2>
                     </div>
                     
                     <div class="projects-grid">
                         <div class="project-card hover-target reveal-up">
                             <div class="card-content">
-                                <h4>Scot Forge Capstone</h4>
-                                <h3>Predictive Forecasting</h3>
-                                <p>Hybrid ensemble + 95th percentile quantile regression. Reduced client financial costs by 42%.</p>
+                                <h4>Capstone Project</h4>
+                                <h3>Scot Forge Forecasting</h3>
+                                <ul>
+                                    <li>Designed and deployed a hybrid ensemble + 95th percentile quantile regression forecasting solution trained on 10 years of historical data.</li>
+                                    <li>Reduced client financial costs by 42% by improving demand forecast accuracy, enabling optimized production scheduling.</li>
+                                </ul>
                             </div>
-                            <div class="card-bg"></div>
                         </div>
 
                         <div class="project-card hover-target reveal-up">
                             <div class="card-content">
-                                <h4>1st Place UTA Datathon</h4>
-                                <h3>Ensemble ML Pipeline</h3>
-                                <p>LightGBM + Random Forest ensemble model achieving 82% predictive accuracy on real-world dataset.</p>
+                                <h4>1st Place</h4>
+                                <h3>UTA Datathon (82% Acc)</h3>
+                                <ul>
+                                    <li>Won first place among competing university teams by building a LightGBM + Random Forest ensemble model achieving 82% predictive accuracy.</li>
+                                    <li>Deployed a user-facing application to present model outputs interactively to judges and stakeholders.</li>
+                                </ul>
                             </div>
-                            <div class="card-bg"></div>
                         </div>
 
                         <div class="project-card hover-target reveal-up">
                             <div class="card-content">
-                                <h4>JobHunter AI</h4>
-                                <h3>Agentic Engineering</h3>
-                                <p>Chrome extension integrating LLM-based workflows to automate job discovery and cover letters.</p>
+                                <h4>Generative AI</h4>
+                                <h3>JobHunter AI Extension</h3>
+                                <ul>
+                                    <li>Built an AI-powered Chrome extension integrating LLM-based workflows to automate job discovery and generate tailored cover letters.</li>
+                                    <li>Delivered job-fit recommendations, demonstrating applied Generative AI and Agentic engineering.</li>
+                                </ul>
                             </div>
-                            <div class="card-bg"></div>
                         </div>
                         
                         <div class="project-card hover-target reveal-up">
                             <div class="card-content">
-                                <h4>5th Place INFORMS</h4>
-                                <h3>Pipeline Optimization</h3>
-                                <p>End-to-end ML pipeline optimizing XGBoost and LightGBM models, achieving 88% accuracy.</p>
+                                <h4>5th Place</h4>
+                                <h3>INFORMS Data Challenge</h3>
+                                <ul>
+                                    <li>Developed an end-to-end ML pipeline optimizing XGBoost, LightGBM, and Random Forest models.</li>
+                                    <li>Achieved 88% accuracy and placed 5th in a preliminary analytics competition.</li>
+                                </ul>
                             </div>
-                            <div class="card-bg"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Education Section -->
+            <section class="education section" id="education">
+                <div class="container">
+                    <div class="reveal-text">
+                        <h2 class="section-heading">04. EDUCATION</h2>
+                    </div>
+                    
+                    <div class="exp-item reveal-up hover-target">
+                        <div class="exp-meta">
+                            <h3>M.S. in Data Science</h3>
+                            <span>University of Texas at Arlington</span>
+                            <span class="date">Aug 2024 - May 2026</span>
+                        </div>
+                        <div class="exp-details">
+                            <p>GPA: 3.9 / 4.0</p>
+                        </div>
+                    </div>
+                    <div class="exp-item reveal-up hover-target">
+                        <div class="exp-meta">
+                            <h3>B.E. in Electronics</h3>
+                            <span>University of Mumbai</span>
+                            <span class="date">Aug 2016 - Oct 2020</span>
+                        </div>
+                        <div class="exp-details">
+                            <p>GPA: 7.42 / 10.0</p>
                         </div>
                     </div>
                 </div>
